@@ -1,0 +1,51 @@
+import axios, { AxiosInstance } from 'axios';
+import type { TokenService } from './tokenService.js';
+
+export type QueryUsersParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  businessId?: string;
+  minStamp?: number;
+};
+
+export type BasicUser = {
+  id: string;
+  email?: string | null;
+  phone?: string | null;
+  name?: string | null;
+  surname?: string | null;
+};
+
+export class UserServiceClient {
+  private http: AxiosInstance;
+  private tokenService: TokenService;
+
+  constructor(opts: { baseUrl: string; tokenService: TokenService }) {
+    this.http = axios.create({ baseURL: opts.baseUrl.replace(/\/$/, '') });
+    this.tokenService = opts.tokenService;
+  }
+
+  private async authHeaders(): Promise<Record<string, string>> {
+    const token = await this.tokenService.getAccessToken();
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  }
+
+  async queryUsers(params: QueryUsersParams): Promise<BasicUser[]> {
+    // If the real user-service is running, call its internal query endpoint with service auth.
+    const headers = await this.authHeaders();
+    const res = await this.http.post('/internal/v1/users/query', {
+      targetingRules: params.search ? [{ database: 'USER', field: 'email', operator: 'CONTAINS', value: params.search }] : [],
+      limit: params.limit ?? 50,
+      businessId: params.businessId ?? null,
+    }, { headers });
+    const users: any[] = res.data?.users ?? [];
+    return users.map(u => ({
+      id: String(u.id),
+      email: u.email ?? null,
+      phone: u.phone ?? null,
+      name: u.firstName ?? null,
+      surname: u.lastName ?? null,
+    }));
+  }
+}

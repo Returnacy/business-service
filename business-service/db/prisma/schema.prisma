@@ -1,0 +1,87 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Brand {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  phone     String   @unique
+  address   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  totalSms   Int      @default(0)
+  totalEmail Int      @default(0)
+  totalPush  Int      @default(0)
+  availableSms   Int      @default(0)
+  availableEmail Int      @default(0)
+  availablePush  Int      @default(0)
+  businesses Business[]
+  prizes     Prize[]
+}
+
+model Business {
+  id             String   @id @default(uuid())
+  brandId        String
+  name           String
+  email          String   @unique
+  phone          String   @unique
+  address        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  totalSms   Int      @default(0)
+  totalEmail Int      @default(0)
+  totalPush  Int      @default(0)
+  availableSms   Int      @default(0)
+  availableEmail Int      @default(0)
+  availablePush  Int      @default(0)
+  brand          Brand    @relation(fields: [brandId], references: [id])
+  stamps         Stamp[]
+  coupons        Coupon[]
+  prizes         Prize[]
+}
+
+model Prize {
+  id          String   @id @default(uuid())
+  brandId     String?
+  businessId  String?
+  name        String
+  pointsRequired Int
+  isPromotional Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  brand       Brand?  @relation(fields: [brandId], references: [id])
+  business    Business? @relation(fields: [businessId], references: [id])
+  coupons     Coupon[]
+}
+
+model Stamp {
+  id         String   @id @default(uuid())
+  userId     String
+  businessId String
+  isRedeemed Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  business   Business @relation(fields: [businessId], references: [id])
+  @@index([userId, businessId])
+}
+
+model Coupon {
+  id         String   @id @default(uuid())
+  userId     String
+  businessId String
+  prizeId    String
+  code       String   @unique
+  isRedeemed Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  expiredAt  DateTime?
+  redeemedAt DateTime?
+  business   Business @relation(fields: [businessId], references: [id])
+  prize      Prize    @relation(fields: [prizeId], references: [id])
+  @@index([userId, businessId, prizeId])
+}

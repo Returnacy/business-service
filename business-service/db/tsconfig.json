@@ -1,0 +1,19 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "outDir": "dist",
+    "types": [],
+    "rootDir": ".",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"]
+    },
+    "tsBuildInfoFile": "dist/.tsbuildinfo",
+    "isolatedModules": true
+  },
+  "include": ["src", "prisma"],
+  "exclude": ["dist"]
+}

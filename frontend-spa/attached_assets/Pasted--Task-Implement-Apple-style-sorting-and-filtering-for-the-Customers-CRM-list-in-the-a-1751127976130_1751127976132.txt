@@ -1,0 +1,44 @@
+> > **Task**
+>
+> > Implement “Apple-style” sorting and filtering for the Customers CRM list in the app. Keep the existing minimal card layout and add intuitive, non-intrusive controls inspired by iOS / macOS Human Interface Guidelines.
+>
+> > 
+>
+> > **Functional requirements**>
+> 1. **Search bar (already present)** remains at the top and filters by name / email / phone in real time.>
+> 2. **Segmented control for sorting** (4 options only): **Name**, **Stamps**, **Coupons, Last visit**.>
+>    - Visual: rounded-rectangle container (rounded-xl bg-gray-100 dark:bg-gray-800) with inner buttons (rounded-lg).>
+>    - Tap toggles asc / desc; show ↑ or ↓ after the label.>
+> 3. **Filter button** (Lucide SlidersHorizontal) beside the segmented control.>
+>    - Opens a **Popover** on desktop, a **Bottom Sheet** on mobile (< 768 px).>
+>    - Inside the popover include:>
+>      - **Range slider** minStamps 0-20.>
+>      - **Toggle** couponsOnly (“Has at least one coupon”).>
+>      - **Number field** lastVisitDays (“Visited in the last … days”).>
+>    - “Apply” and “Clear All” buttons at the bottom.>
+> 4. **Filter chips row** appears **only when ≥ 1 filter active**. Each chip shows the criterion (e.g. Stamps ≥ 5 ✕) and has its own ✕ to remove it; a final “✕ Clear all” chip resets every filter.>
+> 5. **Empty-state message**: “Nessun cliente corrisponde ai parametri di filtro. 🙂”>
+> 6. Keep list usable offline; if the API call fails, show a small banner “Offline – mostro gli ultimi dati”.
+>
+> > 
+>
+> > **State & data**
+> >
+> > *Persist both sort and filters to the URL query string so the state survives reloads and can be shared.*
+>
+> > *Debounce network requests by 150 ms; client-side filter if list ≤ 2000 rows.*
+>
+> > 
+>
+> > **Design tokens / Tailwind**>
+> - Primary text: text-gray-900 dark:text-gray-100>
+> - Subtle borders: border-gray-200 dark:border-gray-700>
+> - Chips: bg-gray-100 dark:bg-gray-700 rounded-full px-3 py-0.5 text-sm>
+> - Popover shadow: shadow-xl/10>
+> - Transition: transition-[height,opacity] duration-200 ease-out for chip row slide-down.
+>
+> > 
+>
+> > **Acceptance criteria**>
+> - Sorting and filtering work on iOS Safari 17, Android Chrome latest, Samsung Internet 23, and desktop Chrome.>
+> - Switching sort or filter never leaves the list blank without a user-facing reason.

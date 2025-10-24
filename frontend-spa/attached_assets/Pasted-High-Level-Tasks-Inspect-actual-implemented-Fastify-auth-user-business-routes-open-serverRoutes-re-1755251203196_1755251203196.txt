@@ -1,0 +1,18 @@
+High-Level Tasks
+
+Inspect actual implemented Fastify auth/user/business routes: open serverRoutes registration (search for register(serverRoutes)) inside backend to list real endpoints (login, signup, me/user, refresh, logout if present, business resources, coupon/stamp equivalents).
+Inventory current API usage in React app: grep in src for fetch(/api, axios, queryClient.fetchQuery, etc. Focus files:
+hooks: use-auth.tsx
+pages: auth-page.tsx, register.tsx, forgot-password.tsx, dashboard.tsx, crm.tsx, customer.tsx, scan-qr.tsx
+components doing mutations: staff-registration.tsx, qr-scanner.tsx, loyalty-card.tsx
+Create a new adapter layer: /PizzaLoyalty/client/src/lib/legacy-api-adapter.ts that exports functions with the OLD semantic names (login, logout, getCurrentUser, registerUser, addStamps, redeemCoupon, listCustomers, listCoupons, createStaff, etc.) but internally call the NEW endpoints (/api/auth/login, /api/auth/signup, /api/auth/refresh, plus any new resource paths).
+Centralize HTTP logic (base URL, credentials, retry, token refresh) by porting patterns from api-client.ts into a React-friendly module /PizzaLoyalty/client/src/lib/http.ts.
+Replace direct fetch calls across the React codebase with calls to legacy-api-adapter.ts. Keep return shapes consistent with existing component expectations; if backend response shape differs, normalize in the adapter (e.g. map user.role_name → role, id → userId, etc.).
+Introduce a token service (if not already) that:
+Reads access token from cookie (if backend sets httpOnly cookie) OR stores it in memory if backend returns it in JSON.
+Performs refresh via /api/auth/refresh on 401 once per burst (dedupe inflight).
+Update Vite proxy in vite.config.ts: change target from http://localhost:5000 to http://localhost:3000 (add env var VITE_API_ORIGIN if desired).
+Remove obsolete session assumptions: code referencing req.session, isAuthenticated endpoints; ensure use-auth.tsx now uses /api/auth/refresh (or /api/auth/me if present) on mount to hydrate user.
+Add robust error normalization: convert backend validation / domain errors into { message, fieldErrors? } expected by existing form code.
+Keep styling & JSX unchanged (only imports / calls).
+Provide a migration note in a new DEV_NOTES.md summarizing endpoint mapping decisions.

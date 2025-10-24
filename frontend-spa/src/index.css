@@ -1,0 +1,139 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 44 33% 95%; /* #F4F1DE */
+  --foreground: 20 14.3% 4.1%;
+  --muted: 60 4.8% 95.9%;
+  --muted-foreground: 25 5.3% 44.7%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 20 14.3% 4.1%;
+  --card: 0 0% 100%;
+  --card-foreground: 20 14.3% 4.1%;
+  --border: 20 5.9% 90%;
+  --input: 20 5.9% 90%;
+  --primary: 210 45% 57%; /* #5C8EC7 */
+  --primary-foreground: 0 0% 100%;
+  --secondary: 212 50% 29%; /* #27496D */
+  --secondary-foreground: 0 0% 100%;
+  --accent: 60 4.8% 95.9%;
+  --accent-foreground: 24 9.8% 10%;
+  --destructive: 5 81% 51%; /* #D94830 */
+  --destructive-foreground: 60 9.1% 97.8%;
+  --ring: 20 14.3% 4.1%;
+  --radius: 0.5rem;
+  
+  /* Brand colors */
+  --brand-blue: 210 45% 57%; /* #5C8EC7 */
+  --brand-dark: 212 50% 29%; /* #27496D */
+  --brand-cream: 44 33% 95%; /* #F4F1DE */
+  --brand-red: 5 81% 51%; /* #D94830 */
+}
+
+.dark {
+  --background: 240 10% 3.9%;
+  --foreground: 0 0% 98%;
+  --muted: 240 3.7% 15.9%;
+  --muted-foreground: 240 5% 64.9%;
+  --popover: 240 10% 3.9%;
+  --popover-foreground: 0 0% 98%;
+  --card: 240 10% 3.9%;
+  --card-foreground: 0 0% 98%;
+  --border: 240 3.7% 15.9%;
+  --input: 240 3.7% 15.9%;
+  --primary: 210 45% 57%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 240 3.7% 15.9%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 240 3.7% 15.9%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 240 4.9% 83.9%;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  }
+}
+
+/* Custom brand color utilities */
+.bg-brand-blue {
+  background-color: hsl(var(--brand-blue));
+}
+
+.bg-brand-dark {
+  background-color: hsl(var(--brand-dark));
+}
+
+.bg-brand-cream {
+  background-color: hsl(var(--brand-cream));
+}
+
+.bg-brand-red {
+  background-color: hsl(var(--brand-red));
+}
+
+.text-brand-blue {
+  color: hsl(var(--brand-blue));
+}
+
+.text-brand-dark {
+  color: hsl(var(--brand-dark));
+}
+
+.text-brand-red {
+  color: hsl(var(--brand-red));
+}
+
+.border-brand-blue {
+  border-color: hsl(var(--brand-blue));
+}
+
+.border-brand-dark {
+  border-color: hsl(var(--brand-dark));
+}
+
+/* Fix z-index layering for stamp dialog over customer modal */
+.stamp-dialog {
+  z-index: 9999 !important;
+}
+
+/* Touch-optimized styles for tablets */
+@media (pointer: coarse) {
+  button, .touchable {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}
+
+/* iPad specific optimizations */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .tablet-padding {
+    padding: 2rem;
+  }
+  
+  .tablet-text-lg {
+    font-size: 1.25rem;
+  }
+  
+  .tablet-button {
+    padding: 1rem 1.5rem;
+    font-size: 1.125rem;
+  }
+}
+
+/* Hide scrollbars while maintaining scroll functionality */
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* Internet Explorer 10+ */
+  scrollbar-width: none;  /* Firefox */
+}
+.scrollbar-hide::-webkit-scrollbar { 
+  display: none;  /* Safari and Chrome */
+}

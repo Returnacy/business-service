@@ -128,8 +128,8 @@ export class RepositoryPrisma {
   }
 
   // Coupons
-  async createCoupon(userId: string, businessId: string, prizeId: string, code: string) {
-    return prisma.coupon.create({ data: { userId, businessId, prizeId, code } });
+  async createCoupon(userId: string, businessId: string, prizeId: string, code: string, expiresAt: Date) {
+    return prisma.coupon.create({ data: { userId, businessId, prizeId, code, expiresAt } });
   }
   async redeemCoupon(couponId: string) {
     return prisma.coupon.update({ where: { id: couponId }, data: { isRedeemed: true, redeemedAt: new Date() } });

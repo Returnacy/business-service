@@ -32,5 +32,5 @@ export const userSchema = z.object({
     stampsNeededForNextPrize: z.number().int(),
     stampsNextPrize: z.number().int(),
     stampsLastPrize: z.number().int(),
-  }),
+  }).optional().nullable(),
 });

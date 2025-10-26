@@ -25,10 +25,10 @@ export type ClientType = {
     validStamps: number;
     stamps?: StampType[];
   }
-  nextPrize: {
+  nextPrize?: {
     name: string;
     stampsNeededForNextPrize: number;
     stampsNextPrize: number;
     stampsLastPrize: number;
-  }
+  } | null;
 }

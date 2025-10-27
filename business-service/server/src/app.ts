@@ -21,10 +21,28 @@ export async function buildApp() {
   app.get('/health', async () => ({ status: 'ok' }));
 
   const allowedRoles = new Set(['admin', 'brand_manager', 'manager', 'owner', 'staff']);
+  const allowedServices = new Set(
+    (process.env.KEYCLOAK_SERVICE_AUDIENCE || 'campaign-service,messaging-service,user-service,business-service')
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+  );
   app.addHook('preHandler', async (request, reply) => {
     if (request.method === 'OPTIONS') return;
     const path = request.routerPath || (request.raw?.url ? request.raw.url.split('?')[0] : undefined);
     if (path === '/health') return;
+    const auth = (request as any).auth;
+    if (auth) {
+      const azp = typeof auth.azp === 'string' ? auth.azp : undefined;
+      const audClaim = auth.aud;
+      const audList = Array.isArray(audClaim)
+        ? audClaim
+        : typeof audClaim === 'string'
+          ? [audClaim]
+          : [];
+      const serviceAllowed = (azp && allowedServices.has(azp)) || audList.some((aud) => allowedServices.has(String(aud)));
+      if (serviceAllowed) return;
+    }
     const memberships = (request as any).userMemberships ?? [];
     const hasAccess = memberships.some((membership: any) =>
       Array.isArray(membership?.roles) && membership.roles.some((role: any) => allowedRoles.has(String(role).toLowerCase()))

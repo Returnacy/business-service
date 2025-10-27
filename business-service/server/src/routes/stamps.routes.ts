@@ -73,18 +73,16 @@ export function registerStampsRoutes(app: FastifyInstance) {
     });
     const userClient = new UserServiceClient({ baseUrl: process.env.USER_SERVICE_URL || 'http://user-server:3000', tokenService });
 
-    // We need raw HTTP here for counters; extend client inline
-    const svcToken = await tokenService.getAccessToken();
-    const headers = svcToken ? { Authorization: `Bearer ${svcToken}` } : {};
-    // Recount unredeemed coupons for validCoupons counter
-    const unredeemedCount = (await app.repository.listCoupons(input.userId, input.businessId)).filter((c: any) => !c.isRedeemed).length;
-    await (userClient as any).http.post(`/internal/v1/users/${encodeURIComponent(input.userId)}/memberships/counters`, {
+    const now = new Date();
+    const unredeemedCount = (await app.repository.listCoupons(input.userId, input.businessId)).filter((c: any) => !c.isRedeemed && (!c.expiredAt || new Date(c.expiredAt).getTime() > now.getTime())).length;
+    await userClient.updateMembershipCounters({
+      userId: input.userId,
       businessId: input.businessId,
       validStamps,
       validCoupons: unredeemedCount,
       totalStampsDelta: input.stamps,
       totalCouponsDelta: toCreate,
-    }, { headers });
+    });
 
     return reply.code(200).send({
       message: 'Stamps applied',

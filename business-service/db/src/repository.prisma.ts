@@ -128,8 +128,9 @@ export class RepositoryPrisma {
   }
 
   // Coupons
-  async createCoupon(userId: string, businessId: string, prizeId: string, code: string, expiredAt: Date) {
-    return prisma.coupon.create({ data: { userId, businessId, prizeId, code, expiredAt } });
+  async createCoupon(userId: string, businessId: string, prizeId: string, code: string, expiredAt?: Date | null) {
+    const defaultExpiry = expiredAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    return prisma.coupon.create({ data: { userId, businessId, prizeId, code, expiredAt: defaultExpiry }, include: { prize: true } });
   }
   async redeemCoupon(couponId: string) {
     return prisma.coupon.update({

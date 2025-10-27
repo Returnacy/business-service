@@ -50,4 +50,26 @@ export class UserServiceClient {
       birthday: u.attributes?.birthday ?? null,
     }));
   }
+
+  async updateMembershipCounters(args: {
+    userId: string;
+    businessId: string;
+    validStamps?: number;
+    validCoupons?: number;
+    totalStampsDelta?: number;
+    totalCouponsDelta?: number;
+  }): Promise<void> {
+    const headers = await this.authHeaders();
+    await this.http.post(
+      `/internal/v1/users/${encodeURIComponent(args.userId)}/memberships/counters`,
+      {
+        businessId: args.businessId,
+        validStamps: args.validStamps,
+        validCoupons: args.validCoupons,
+        totalStampsDelta: args.totalStampsDelta,
+        totalCouponsDelta: args.totalCouponsDelta,
+      },
+      { headers }
+    );
+  }
 }

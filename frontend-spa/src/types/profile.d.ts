@@ -1,5 +1,5 @@
 export type ProfileType = {
   name: string;
   surname: string;
-  birthdate: Date;
+  birthdate: Date | null;
 };

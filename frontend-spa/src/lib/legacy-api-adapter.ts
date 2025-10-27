@@ -306,7 +306,11 @@ export async function listCustomers(params: ListCustomersParams = {}): Promise<C
       role: 'USER',
       isVerified: true,
       lastVisit: r.lastVisit ? new Date(r.lastVisit) : null,
-  profile: (r.name || r.surname) ? { name: r.name ?? '', surname: r.surname ?? '', birthdate: new Date(0) } : null,
+      profile: (r.name || r.surname || r.birthday) ? {
+        name: r.name ?? '',
+        surname: r.surname ?? '',
+        birthdate: r.birthday ? new Date(r.birthday) : null,
+      } : null,
       userAgreement: { privacyPolicy: false, termsOfService: false, marketingPolicy: false },
       coupons: {
         validCoupons: Math.max(0, Number(r.couponsCount ?? 0) || 0),
@@ -370,7 +374,7 @@ export async function getUserStamps(userId: number): Promise<{ stamps: number }>
 /**
  * Coupon management functions
  */
-export async function getUserCoupons(userId: number): Promise<CouponType[] | null> {
+export async function getUserCoupons(userId: number | string): Promise<CouponType[] | null> {
   try {
     const businessId = getBusinessId();
     const res = await businessHttp.get<any>(`/api/v1/coupons?userId=${encodeURIComponent(String(userId))}&businessId=${encodeURIComponent(businessId)}`);
@@ -378,11 +382,12 @@ export async function getUserCoupons(userId: number): Promise<CouponType[] | nul
     const mapped = Array.isArray(payload)
       ? payload.map((c: any) => ({
           id: c.id ?? undefined,
-          createdAt: c.createdAt ?? c.created_at ?? new Date().toISOString(),
+          createdAt: new Date(c.createdAt ?? c.created_at ?? Date.now()),
           code: c.code ?? String(c.id ?? ''),
           url: c.url ?? '',
           isRedeemed: !!(c.isRedeemed ?? c.is_redeemed),
-          redeemedAt: c.redeemedAt ?? c.redeemed_at ?? null,
+          redeemedAt: c.redeemedAt ? new Date(c.redeemedAt) : c.redeemed_at ? new Date(c.redeemed_at) : null,
+          expiredAt: c.expiredAt ? new Date(c.expiredAt) : c.expired_at ? new Date(c.expired_at) : null,
           prize: c.prize ? { name: c.prize.name, pointsRequired: c.prize.pointsRequired } : undefined,
         }))
       : [];

@@ -80,7 +80,7 @@ export function CustomerDetailDialog({ customer, onClose, onAddStamps, onRedeemC
               const canRedeem = (customer.validCoupons || 0) > 0;
               const pending = !!redeemState?.pending;
               return (
-                <Button className={`w-full ${canRedeem ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400'}`} size="lg" disabled={!canRedeem || pending} onClick={() => onRedeemCoupon(customer)}>
+                <Button className={`w-full ${canRedeem ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-400'}`} size="lg" disabled={!canRedeem || pending} onClick={() => { void onRedeemCoupon(customer); }}>
                   <Gift className="w-4 h-4 mr-2" />{pending ? 'Riscatto...' : canRedeem ? 'Riscatta Coupon' : 'Coupon Non Disponibile'}
                 </Button>
               );

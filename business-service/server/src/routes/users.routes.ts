@@ -96,6 +96,7 @@ export function registerUsersRoutes(app: FastifyInstance) {
           phone: u.phone,
           name: (u as any).name,
           surname: (u as any).surname,
+          birthday: u.birthday ?? null,
           validStamps: stats.validStamps,
           couponsCount: stats.couponsCount, // unredeemed & not expired
           totalCoupons: stats.totalCoupons, // total earned (redeemed + unredeemed)

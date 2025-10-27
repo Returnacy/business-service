@@ -132,10 +132,14 @@ export class RepositoryPrisma {
     return prisma.coupon.create({ data: { userId, businessId, prizeId, code, expiredAt } });
   }
   async redeemCoupon(couponId: string) {
-    return prisma.coupon.update({ where: { id: couponId }, data: { isRedeemed: true, redeemedAt: new Date() } });
+    return prisma.coupon.update({
+      where: { id: couponId },
+      data: { isRedeemed: true, redeemedAt: new Date() },
+      include: { prize: true },
+    });
   }
   async listCoupons(userId: string, businessId: string) {
-    return prisma.coupon.findMany({ where: { userId, businessId } });
+    return prisma.coupon.findMany({ where: { userId, businessId }, include: { prize: true } });
   }
 
   // Capacity (available messages)

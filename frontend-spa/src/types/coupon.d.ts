@@ -5,6 +5,7 @@ export type CouponType = {
   url: string;
   isRedeemed: boolean;
   redeemedAt: Date | null;
+  expiredAt?: Date | null;
   prize?: {
     pointsRequired: number;
     name: string;

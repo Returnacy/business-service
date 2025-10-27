@@ -15,6 +15,7 @@ export type BasicUser = {
   phone?: string | null;
   name?: string | null;
   surname?: string | null;
+  birthday?: string | null;
 };
 
 export class UserServiceClient {
@@ -46,6 +47,7 @@ export class UserServiceClient {
       phone: u.phone ?? null,
       name: u.firstName ?? null,
       surname: u.lastName ?? null,
+      birthday: u.attributes?.birthday ?? null,
     }));
   }
 }

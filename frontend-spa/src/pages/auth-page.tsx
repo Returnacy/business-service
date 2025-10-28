@@ -4,7 +4,6 @@ import { type LoginInput } from '../schema/login/login.schema';
 import { type SignupInput } from '../schema/signup/signup.schema';
 import { useAuth } from '../hooks/use-auth';
 // Google signup now uses official GIS button; login flow remains unchanged for now
-import { Button } from '../components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Pizza, Users, Star, TrendingUp } from 'lucide-react';
@@ -29,11 +28,27 @@ export default function AuthPage() {
   const googleEnabled = Boolean(googleClientId);
   // State for GIS and active tab
   const [gisReady, setGisReady] = useState(false);
-  const [activeTab, setActiveTab] = useState<'login' | 'register'>('login');
+  const [activeTab, setActiveTab] = useState('login' as 'login' | 'register');
 
   const loginForm = useLoginForm();
   const registerForm = useRegisterForm();
   const { loginMethod, setLoginMethod, signupMethod, setSignupMethod } = useAuthMethodToggle();
+
+  const decodeJwtPayload = (credential: string): Record<string, any> | null => {
+    try {
+      const parts = credential.split('.');
+      if (parts.length < 2) return null;
+      const normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+      const padLength = (4 - (normalized.length % 4)) % 4;
+      const padded = normalized + '='.repeat(padLength);
+      const decoded = atob(padded);
+      return JSON.parse(decoded);
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.warn('Failed to decode Google credential', err);
+      return null;
+    }
+  };
 
   // If Google isn't configured for this origin, force password flows to avoid disabled register button
   useEffect(() => {
@@ -81,9 +96,28 @@ export default function AuthPage() {
       const callback = async (response: any) => {
         const token = response?.credential as string | undefined;
         if (!token) return;
+
+        const profile = decodeJwtPayload(token);
+        const googleEmail = typeof profile?.email === 'string' ? profile.email.toLowerCase() : undefined;
+
+        if (googleEmail) {
+          registerForm.setValue('email', googleEmail, { shouldDirty: true, shouldValidate: true });
+          loginForm.setValue('email', googleEmail, { shouldDirty: true });
+        }
+
+        const currentRegisterValues = registerForm.getValues();
+        if (profile?.given_name && !(currentRegisterValues.name?.trim())) {
+          registerForm.setValue('name', profile.given_name, { shouldDirty: true });
+        }
+        if (profile?.family_name && !(currentRegisterValues.surname?.trim())) {
+          registerForm.setValue('surname', profile.family_name, { shouldDirty: true });
+        }
+
         if (activeTab === 'register') {
           const base = registerForm.getValues();
+          const emailInput = (base?.email || googleEmail || '').trim().toLowerCase();
           const ok = Boolean(
+            emailInput &&
             base?.acceptedTermsAndConditions &&
             base?.acceptedPrivacyPolicy &&
             base?.name && base.name.trim().length >= 2 &&
@@ -93,26 +127,40 @@ export default function AuthPage() {
           if (!ok) {
             toast({
               title: 'Completa i campi richiesti',
-              description: 'Compila nome, cognome, data di nascita e accetta termini e privacy prima di continuare con Google.',
+              description: 'Compila nome, cognome, email, data di nascita e accetta termini e privacy prima di continuare con Google.',
               variant: 'destructive',
             });
             return;
           }
+
           const payload: SignupInput = {
-            authType: 'oauth', provider: 'google', idToken: token,
-            name: base.name, surname: base.surname, birthdate: base.birthdate,
+            authType: 'oauth',
+            provider: 'google',
+            idToken: token,
+            email: emailInput,
+            name: base.name.trim(),
+            surname: base.surname.trim(),
+            birthdate: base.birthdate,
             acceptedTermsAndConditions: base.acceptedTermsAndConditions,
             acceptedPrivacyPolicy: base.acceptedPrivacyPolicy,
-            phone: base.phone || undefined,
-          } as any;
+            phone: base.phone ? (String(base.phone).trim() || undefined) : undefined,
+          };
+
           try {
-            await registerMutation.mutateAsync(payload as any);
+            await registerMutation.mutateAsync(payload);
             setLocation('/');
           } catch {}
         } else {
-          const payload: LoginInput = { authType: 'oauth', provider: 'google', idToken: token } as any;
+          const loginValues = loginForm.getValues();
+          const loginEmail = googleEmail || loginValues.email || undefined;
+          const payload: LoginInput = {
+            authType: 'oauth',
+            provider: 'google',
+            idToken: token,
+            email: loginEmail,
+          };
           try {
-            await loginMutation.mutateAsync(payload as any);
+            await loginMutation.mutateAsync(payload);
             setLocation('/');
           } catch {}
         }
@@ -130,7 +178,7 @@ export default function AuthPage() {
 
   const onPasswordLogin = async (data: { email: string; password: string }) => {
     const payload: LoginInput = { authType: 'password', email: data.email, password: data.password } as const;
-    await loginMutation.mutateAsync(payload as any);
+    await loginMutation.mutateAsync(payload);
     setLocation('/');
   };
 
@@ -145,7 +193,7 @@ export default function AuthPage() {
         acceptedPrivacyPolicy: data.acceptedPrivacyPolicy,
         phone: data.phone || undefined,
       } as const;
-      await registerMutation.mutateAsync(payload as any);
+      await registerMutation.mutateAsync(payload);
       setTimeout(() => setLocation('/'), 400);
     }
   };
@@ -226,7 +274,7 @@ export default function AuthPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="p-4 sm:p-6">
-              <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'login' | 'register')} className="w-full">
+              <Tabs value={activeTab} onValueChange={(v: 'login' | 'register') => setActiveTab(v)} className="w-full">
                 <TabsList className="grid w-full grid-cols-2 relative bg-gray-100 p-1 rounded-lg h-9">
                   <TabsTrigger
                     value="login"
@@ -269,12 +317,8 @@ export default function AuthPage() {
                     form={registerForm}
                     onSubmit={onRegister}
                     signupMethod={signupMethod}
-                    toggleMethod={() => { /* prevent internal toggle; use GIS button below for Google */ }}
-                    onGoogle={() => {/* handled by GIS button */}}
                     loading={registerMutation.isPending}
-                    googleLoading={!gisReady}
                     googleError={null}
-                    googleEnabled={false}
                   />
                   <div className="mt-2"><div id="google-signup-btn" className="flex justify-center" /></div>
                 </TabsContent>

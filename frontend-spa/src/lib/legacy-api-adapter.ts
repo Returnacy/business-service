@@ -71,21 +71,29 @@ export interface ResetPasswordData {
  */
 export async function login(credentials: LoginInput): Promise<any> {
   try {
-    // Map to user-service contract
-    if (credentials.authType === 'password') {
-      const loginBody = { username: credentials.email, password: credentials.password };
-      // Exchange credentials for tokens (Keycloak direct grant)
-      await userHttp.post<any>('/api/v1/auth/login', loginBody as any);
-      // Tokens are auto-stored by http client; now fetch current user profile
-      const me = await userHttp.get<any>('/api/v1/me');
-      const userPayload = me?.data ?? me;
-      try {
-        const hr = getHighestRole(userPayload, getTenantContext());
-        if (hr) (userPayload as any).role = hr;
-      } catch {}
-      return userPayload;
-    }
-    throw new Error('OAuth login is not supported in local/dev environment');
+    const payload = credentials.authType === 'password'
+      ? {
+          authType: 'password',
+          email: credentials.email.toLowerCase(),
+          username: credentials.email.toLowerCase(),
+          password: credentials.password,
+        }
+      : {
+          authType: 'oauth',
+          provider: credentials.provider,
+          idToken: credentials.idToken,
+          email: credentials.email ? credentials.email.toLowerCase() : undefined,
+        };
+
+    await userHttp.post<any>('/api/v1/auth/login', payload);
+
+    const me = await userHttp.get<any>('/api/v1/me');
+    const userPayload = me?.data ?? me;
+    try {
+      const hr = getHighestRole(userPayload, getTenantContext());
+      if (hr) (userPayload as any).role = hr;
+    } catch {}
+    return userPayload;
   } catch (error) {
     throw normalizeError(error);
   }
@@ -107,23 +115,51 @@ export async function logout(): Promise<void> {
 
 export async function registerUser(userData: SignupInput): Promise<any> {
   try {
-    // Transform UI schema -> user-service registerSchema
-    const payload: any = {
-      email: (userData as any).email,
-      password: (userData as any).password,
+    const birthday = (userData as any).birthdate ?? (userData as any).birthday;
+    const emailLower = typeof (userData as any).email === 'string'
+      ? (userData as any).email.toLowerCase()
+      : undefined;
+    const basePayload: any = {
       name: (userData as any).name,
       surname: (userData as any).surname,
-      birthday: (userData as any).birthdate, // backend expects 'birthday'
+      birthday,
       acceptTermsOfService: !!(userData as any).acceptedTermsAndConditions,
       acceptPrivacyPolicy: !!(userData as any).acceptedPrivacyPolicy,
-      acceptMarketing: false,
+      acceptMarketing: !!((userData as any).acceptedMarketingPolicy ?? false),
     };
-    if ((userData as any).phone) payload.phone = (userData as any).phone;
+    if ((userData as any).phone) basePayload.phone = (userData as any).phone;
 
-    await userHttp.post<any>('/api/v1/auth/register', payload);
+    const registerPayload = userData.authType === 'password'
+      ? {
+          ...basePayload,
+          authType: 'password',
+          email: emailLower,
+          password: (userData as any).password,
+        }
+      : {
+          ...basePayload,
+          authType: 'oauth',
+          provider: userData.provider,
+          idToken: userData.idToken,
+          email: emailLower,
+        };
+
+    await userHttp.post<any>('/api/v1/auth/register', registerPayload);
+
     if (userData.authType === 'password') {
-      // Automatically log in newly registered user
-      await userHttp.post<any>('/api/v1/auth/login', { username: (userData as any).email, password: (userData as any).password });
+      await userHttp.post<any>('/api/v1/auth/login', {
+        authType: 'password',
+        email: emailLower,
+        username: emailLower,
+        password: (userData as any).password,
+      });
+    } else if (!tokenService.getAccessToken()) {
+      await userHttp.post<any>('/api/v1/auth/login', {
+        authType: 'oauth',
+        provider: userData.provider,
+        idToken: userData.idToken,
+        email: emailLower,
+      });
     }
     const me = await userHttp.get<any>('/api/v1/me');
     const userPayload = me?.data ?? me;

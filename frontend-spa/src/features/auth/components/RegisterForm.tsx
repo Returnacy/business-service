@@ -6,9 +6,15 @@ import { UseFormReturn } from 'react-hook-form';
 import { RegistrationFormValues } from '../hooks/useAuthForms';
 
 
-interface Props { form: UseFormReturn<RegistrationFormValues>; onSubmit: (v: RegistrationFormValues) => void; signupMethod: 'password' | 'google'; toggleMethod: () => void; onGoogle: () => void; loading: boolean; googleLoading: boolean; googleError?: Error | null; googleEnabled?: boolean; }
+interface Props {
+  form: UseFormReturn<any>;
+  onSubmit: (v: RegistrationFormValues) => void;
+  signupMethod: 'password' | 'google';
+  loading: boolean;
+  googleError?: Error | null;
+}
 
-export function RegisterForm({ form, onSubmit, signupMethod, toggleMethod, onGoogle, loading, googleLoading, googleError, googleEnabled = true }: Props) {
+export function RegisterForm({ form, onSubmit, signupMethod, loading, googleError }: Props) {
   const isPassword = signupMethod === 'password';
   const acceptedTerms = form.watch('acceptedTermsAndConditions');
   const acceptedPrivacy = form.watch('acceptedPrivacyPolicy');
@@ -87,13 +93,6 @@ export function RegisterForm({ form, onSubmit, signupMethod, toggleMethod, onGoo
           <div className="mt-2 p-2 text-sm text-gray-600">
             {googleError ? <span className="text-red-600">Errore Google: {googleError.message}</span> : 'Continua con Google cliccando il bottone ufficiale'}
           </div>
-        )}
-        {/* Official Google button container */}
-        <div className="mt-2">
-          <div id="google-signup-btn" className="flex justify-center" />
-        </div>
-        {!googleEnabled && (
-          <p className="text-xs text-gray-500"></p>
         )}
         {googleError && signupMethod==='google' && (
           <div className="flex items-start gap-2 text-amber-600 text-sm">

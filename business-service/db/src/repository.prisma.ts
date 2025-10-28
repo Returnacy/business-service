@@ -132,6 +132,9 @@ export class RepositoryPrisma {
     const defaultExpiry = expiredAt ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     return prisma.coupon.create({ data: { userId, businessId, prizeId, code, expiredAt: defaultExpiry }, include: { prize: true } });
   }
+  async findCouponByCode(code: string, businessId: string) {
+    return prisma.coupon.findFirst({ where: { code, businessId }, include: { prize: true } });
+  }
   async redeemCoupon(couponId: string) {
     return prisma.coupon.update({
       where: { id: couponId },

@@ -61,9 +61,29 @@ export function registerCouponsRoutes(app: FastifyInstance) {
     return { coupon: serializeCoupon(coupon) };
   });
 
-  app.get('/api/v1/coupons', async (request: any) => {
-    const { userId, businessId } = request.query as { userId: string; businessId: string };
-    const coupons = await app.repository.listCoupons(userId, businessId);
+  app.get('/api/v1/coupons', async (request: any, reply: any) => {
+    const { userId, businessId, code } = request.query as { userId?: string; businessId?: string; code?: string };
+    if (!businessId) {
+      return reply.code(400).send({ message: 'businessId required' });
+    }
+
+    if (code) {
+      const trimmedCode = String(code).trim();
+      if (!trimmedCode) {
+        return reply.code(400).send({ message: 'code required' });
+      }
+      const coupon = await app.repository.findCouponByCode(trimmedCode, businessId);
+      if (!coupon) {
+        return reply.code(404).send({ message: 'Coupon not found' });
+      }
+      return { coupons: [serializeCoupon(coupon)] };
+    }
+
+    if (!userId) {
+      return reply.code(400).send({ message: 'userId required' });
+    }
+
+    const coupons = await app.repository.listCoupons(String(userId), businessId);
     return { coupons: coupons.map(serializeCoupon) };
   });
 }

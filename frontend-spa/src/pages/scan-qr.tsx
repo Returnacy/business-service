@@ -1,7 +1,7 @@
 // Refactored Scan QR page into feature components
 import { useState, useEffect } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getUser, addStamps as addStampsLegacy, getPrizeProgression } from '../lib/legacy-api-adapter';
+import { getUser, addStamps as addStampsLegacy, getPrizeProgression, getCouponByCode } from '../lib/legacy-api-adapter';
 import { http } from '../lib/http';
 import { useToast } from '../hooks/use-toast';
 import { useLocation, Link } from 'wouter';
@@ -11,22 +11,23 @@ import { ManualInput } from '../features/scan/components/ManualInput';
 import { CouponResult } from '../features/scan/components/CouponResult';
 import { UserResult } from '../features/scan/components/UserResult';
 import { Button } from '../components/ui/button';
+import type { CouponType } from '../types/coupon';
 
 export default function ScanQRPage() {
   const [location, navigate] = useLocation();
-  const [qrInput, setQrInput] = useState("");
-  const [scannedUser, setScannedUser] = useState<any>(null);
-  const [scannedCoupon, setScannedCoupon] = useState<any>(null);
-  const [firstValidCouponCode, setFirstValidCouponCode] = useState<string | null>(null);
-  const [scanMode, setScanMode] = useState<"camera" | "manual">("camera");
+  const [qrInput, setQrInput] = useState('');
+  const [scannedUser, setScannedUser] = useState(null as any);
+  const [scannedCoupon, setScannedCoupon] = useState(null as CouponType | null);
+  const [firstValidCouponCode, setFirstValidCouponCode] = useState(null as string | null);
+  const [scanMode, setScanMode] = useState('camera' as 'camera' | 'manual');
   const [stampCounter, setStampCounter] = useState(1);
   const [fromCRM, setFromCRM] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // Extract query params (supports legacy serialized object)
-  const [userIdParam, setUserIdParam] = useState<string | null>(null);
-  const [couponParam, setCouponParam] = useState<string | null>(null);
+  const [userIdParam, setUserIdParam] = useState(null as string | null);
+  const [couponParam, setCouponParam] = useState(null as string | null);
   const [resolvingScan, setResolvingScan] = useState(false);
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -45,6 +46,9 @@ export default function ScanQRPage() {
       setCouponParam(null);
       return;
     }
+
+    setUserIdParam(null);
+    setCouponParam(null);
 
     if (rawCoupon) {
       try {
@@ -83,11 +87,6 @@ export default function ScanQRPage() {
 
   // Map query data to scannedUser when from CRM (don't overwrite if a QR scan already set a user)
   useEffect(() => {
-    // Coupon flow: if coupon param present create placeholder entity
-    if (couponParam) {
-      setScannedCoupon((prev: any) => prev ?? { id: couponParam, code: couponParam, qrCode: couponParam, isRedeemed: false });
-    }
-
     if (userQuery.data && userIdParam) {
       const data: any = userQuery.data as any;
       const profile = data.profile || {};
@@ -113,6 +112,7 @@ export default function ScanQRPage() {
         totalCoupons: data.coupons?.usedCoupons ?? 0,
         nextPrizeName: data.nextPrize?.name || 'Prossimo premio',
       };
+      setScannedCoupon(null);
       setScannedUser(mapped);
       // Extract first valid (non redeemed) coupon code if available
       try {
@@ -123,7 +123,75 @@ export default function ScanQRPage() {
         setFirstValidCouponCode(null);
       }
     }
-  }, [userQuery.data, userIdParam, couponParam]);
+  }, [userQuery.data, userIdParam]);
+
+  useEffect(() => {
+    if (!couponParam) return;
+    let cancelled = false;
+    setResolvingScan(true);
+    const code = couponParam.trim();
+    if (!code) {
+      setScannedCoupon(null);
+      setFirstValidCouponCode(null);
+      setScannedUser(null);
+      setResolvingScan(false);
+      navigate('/scan-qr', { replace: true });
+      return;
+    }
+    (async () => {
+      try {
+        const coupon = await getCouponByCode(code);
+        if (!coupon) {
+          if (!cancelled) {
+            setScannedCoupon(null);
+            setFirstValidCouponCode(null);
+            setScannedUser(null);
+            toast({
+              title: 'Coupon non trovato',
+              description: 'Nessun coupon valido corrisponde al codice inserito.',
+              variant: 'destructive',
+            });
+            navigate('/scan-qr', { replace: true });
+          }
+          return;
+        }
+        if (cancelled) return;
+        setScannedUser(null);
+        setFirstValidCouponCode(null);
+        setScannedCoupon({
+          ...coupon,
+          id: coupon.id ?? coupon.code,
+          qrCode: coupon.qrCode ?? coupon.code,
+        });
+      } catch (error: any) {
+        if (cancelled) return;
+          const message = error?.message ?? 'Impossibile verificare il coupon. Riprova.';
+        setScannedCoupon(null);
+        setFirstValidCouponCode(null);
+    setScannedUser(null);
+        toast({
+          title: 'Errore nel recupero del coupon',
+          description: message,
+          variant: 'destructive',
+        });
+        navigate('/scan-qr', { replace: true });
+      } finally {
+        if (!cancelled) setResolvingScan(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+      setResolvingScan(false);
+    };
+  }, [couponParam, navigate, toast]);
+
+  useEffect(() => {
+    if (!couponParam) {
+      setScannedCoupon(null);
+      setResolvingScan(false);
+      setFirstValidCouponCode(null);
+    }
+  }, [couponParam]);
 
   // Removed manual fetchUser in favor of React Query getUser
 
@@ -178,7 +246,14 @@ export default function ScanQRPage() {
       return { code: qrCode, isRedeemed: true, redeemedAt: new Date().toISOString() };
     },
     onSuccess: (redeemedCoupon) => {
-      setScannedCoupon((prev: any) => ({ ...(prev || {}), ...redeemedCoupon }));
+  setScannedCoupon((prev: CouponType | null) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          isRedeemed: true,
+          redeemedAt: redeemedCoupon.redeemedAt ? new Date(redeemedCoupon.redeemedAt) : new Date(),
+        };
+      });
       queryClient.invalidateQueries({ queryKey: ["/api/analytics/overview"] });
       
       toast({
@@ -197,6 +272,20 @@ export default function ScanQRPage() {
       });
     },
   });
+
+  const handleRedeemCoupon = () => {
+    if (!scannedCoupon) return;
+    const code = scannedCoupon.qrCode ?? scannedCoupon.code;
+    if (!code) {
+      toast({
+        title: 'Coupon non valido',
+        description: 'Il coupon selezionato non contiene un codice valido.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    redeemCouponMutation.mutate(code);
+  };
 
   const handleScan = async (qrCode?: string) => {
     const raw = qrCode || qrInput.trim();
@@ -231,6 +320,26 @@ export default function ScanQRPage() {
         isUser = true;
       } catch (e) {
         isUser = false;
+      }
+      if (!isUser) {
+        try {
+          const coupon = await getCouponByCode(raw);
+          if (!coupon) {
+            toast({
+              title: 'Coupon non trovato',
+              description: 'Verifica il codice inserito e riprova.',
+              variant: 'destructive',
+            });
+            return;
+          }
+        } catch (error: any) {
+          toast({
+            title: 'Errore nel recupero del coupon',
+            description: error?.message ?? 'Impossibile verificare il coupon. Riprova.',
+            variant: 'destructive',
+          });
+          return;
+        }
       }
       const base = (import.meta as any).env?.VITE_FRONTEND_BASE_URL || window.location.origin;
       const paramName = isUser ? 'customer' : 'coupon';
@@ -293,6 +402,7 @@ export default function ScanQRPage() {
     setScannedCoupon(null);
     setFromCRM(false);
     setScanMode('camera');
+    setResolvingScan(false);
     // Remove any query params and stay on scan page
     navigate('/scan-qr', { replace: true });
   };
@@ -332,7 +442,7 @@ export default function ScanQRPage() {
             : <ManualInput value={qrInput} onChange={setQrInput} onSubmit={() => handleScan()} loading={resolvingScan} />}
         </div>
       ) : scannedCoupon ? (
-        <CouponResult coupon={scannedCoupon} onRedeem={() => redeemCouponMutation.mutate(scannedCoupon.qrCode)} loading={redeemCouponMutation.isPending} onReset={reset} />
+        <CouponResult coupon={scannedCoupon} onRedeem={handleRedeemCoupon} loading={redeemCouponMutation.isPending} onReset={reset} />
       ) : (
         scannedUser && (
           <div className="space-y-4">

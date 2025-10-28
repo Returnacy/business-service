@@ -398,6 +398,33 @@ export async function getUserCoupons(userId: number | string): Promise<CouponTyp
   }
 }
 
+export async function getCouponByCode(code: string): Promise<CouponType | null> {
+  try {
+    if (!code || !code.trim()) return null;
+    const businessId = getBusinessId();
+    const res = await businessHttp.get<any>(`/api/v1/coupons?code=${encodeURIComponent(code)}&businessId=${encodeURIComponent(businessId)}`);
+    const payload = (res as any)?.coupons ?? (res as any)?.data?.coupons ?? [];
+    const coupon = Array.isArray(payload) ? payload[0] : null;
+    if (!coupon) return null;
+    return {
+      id: coupon.id ?? undefined,
+      createdAt: new Date(coupon.createdAt ?? coupon.created_at ?? Date.now()),
+      code: coupon.code ?? String(coupon.id ?? ''),
+      qrCode: coupon.qrCode ?? coupon.code ?? String(coupon.id ?? ''),
+      url: coupon.url ?? coupon.qrCode ?? '',
+      isRedeemed: !!(coupon.isRedeemed ?? coupon.is_redeemed),
+      redeemedAt: coupon.redeemedAt ? new Date(coupon.redeemedAt) : coupon.redeemed_at ? new Date(coupon.redeemed_at) : null,
+      expiredAt: coupon.expiredAt ? new Date(coupon.expiredAt) : coupon.expired_at ? new Date(coupon.expired_at) : null,
+      prize: coupon.prize ? { name: coupon.prize.name, pointsRequired: coupon.prize.pointsRequired } : undefined,
+    } satisfies CouponType;
+  } catch (error: any) {
+    if (error?.status === 404) {
+      return null;
+    }
+    throw normalizeError(error);
+  }
+}
+
 export async function redeemCoupon(couponId: string | number): Promise<{ success: boolean }> {
   try {
     await businessHttp.patch(`/api/v1/coupons/${encodeURIComponent(String(couponId))}/redeem`, {});
@@ -562,6 +589,7 @@ export const legacyApi = {
   
   // Coupons
   getUserCoupons,
+  getCouponByCode,
   redeemCoupon,
   
   // QR Lookup

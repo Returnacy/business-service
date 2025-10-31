@@ -3,10 +3,10 @@ import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button";
 import { LoyaltyCard } from "../components/loyalty-card";
 import { QRCode } from "../components/qr-code";
-import { Gift, CheckCircle, AlertCircle, Mail, Loader2 } from "lucide-react";
+import { Gift, CheckCircle, AlertCircle, Mail, Loader2, WalletCards } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "../lib/queryClient";
-import { getClientProfile, getPrizeProgression } from "../lib/legacy-api-adapter";
+import { createGoogleWalletPass, getClientProfile, getPrizeProgression } from "../lib/legacy-api-adapter";
 import type { ClientType } from "../types/client";
 import { useToast } from "../hooks/use-toast";
 import loyaltyLogo from "@assets/che_pizza_fidelity_logo_horizontal.png";
@@ -79,6 +79,42 @@ export default function CustomerPage() {
 
   const coupons = client?.coupons?.coupons || [];
   const lastVisit = client?.lastVisit ? new Date(client.lastVisit) : null;
+
+  const googleWalletMutation = useMutation<
+    { saveUrl: string; jwt: string; objectId: string; classId: string; expiresAt: string },
+    Error,
+    { qrCode: string }
+  >({
+    mutationFn: async ({ qrCode }: { qrCode: string }) => {
+      return await createGoogleWalletPass({ qrCode });
+    },
+  });
+
+  const handleSaveToGoogleWallet = async () => {
+    if (!userData?.id) {
+      toast({
+        title: "Dati mancanti",
+        description: "Impossibile generare il pass senza un identificativo utente.",
+        variant: "destructive",
+      });
+      return;
+    }
+    try {
+      const pass = await googleWalletMutation.mutateAsync({ qrCode: userData.id });
+      window.open(pass.saveUrl, "_blank", "noopener,noreferrer");
+      toast({
+        title: "Pass pronto!",
+        description: "Aggiungi la carta fedeltà al tuo Google Wallet.",
+      });
+    } catch (error: any) {
+      const message = error?.message || "Non è stato possibile generare il pass.";
+      toast({
+        title: "Errore", 
+        description: message,
+        variant: "destructive",
+      });
+    }
+  };
 
   // Resend verification email mutation
   const resendVerificationMutation = useMutation({
@@ -251,6 +287,33 @@ export default function CustomerPage() {
           <CardContent className="flex justify-center">
             <div className="bg-white p-6 rounded-xl shadow-lg">
               <QRCode value={userData?.id || ""} size={200} />
+            </div>
+          </CardContent>
+          <CardContent className="pt-0">
+            <div className="flex flex-col items-center gap-2">
+              <Button
+                onClick={handleSaveToGoogleWallet}
+                disabled={googleWalletMutation.isPending || !userData?.id}
+                variant="outline"
+                className="bg-white"
+              >
+                {googleWalletMutation.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Generazione in corso...
+                  </>
+                ) : (
+                  <>
+                    <WalletCards className="h-4 w-4 mr-2" />
+                    Salva su Google Wallet
+                  </>
+                )}
+              </Button>
+              {googleWalletMutation.data?.expiresAt && (
+                <p className="text-xs text-gray-500 text-center">
+                  Link valido fino a {new Date(googleWalletMutation.data.expiresAt).toLocaleString()}
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>

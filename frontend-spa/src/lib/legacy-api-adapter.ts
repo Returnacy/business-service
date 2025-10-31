@@ -208,6 +208,21 @@ export async function getClientProfile(): Promise<ClientType> {
   }
 }
 
+export async function createGoogleWalletPass(options: { businessId?: string; qrCode?: string } = {}): Promise<{ saveUrl: string; jwt: string; objectId: string; classId: string; expiresAt: string; }> {
+  try {
+    const businessId = options.businessId || getBusinessId();
+    if (!businessId) {
+      throw new Error('businessId is required to generate Google Wallet pass');
+    }
+    const body: Record<string, unknown> = { businessId };
+    if (options.qrCode) body.qrCode = options.qrCode;
+    const response = await businessHttp.post<any>('/api/v1/wallet/google', body);
+    return (response?.data ?? response) as { saveUrl: string; jwt: string; objectId: string; classId: string; expiresAt: string; };
+  } catch (error) {
+    throw normalizeError(error);
+  }
+}
+
 /**
  * Accept latest terms and privacy on behalf of the current authenticated user
  * Optional payload supports marketingSubscription flag (ignored if not provided)
@@ -611,6 +626,7 @@ export const legacyApi = {
   acceptUserAgreement,
   forgotPassword,
   resetPassword,
+  createGoogleWalletPass,
   getGoogleClientId: () => (globalThis as any).ENV?.VITE_GOOGLE_CLIENT_ID || (import.meta as any).env?.VITE_GOOGLE_CLIENT_ID,
   
   // Users

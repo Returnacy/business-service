@@ -110,7 +110,7 @@ async function loadPrivateKey(privateKeyRaw: string): Promise<unknown> {
   const key = await importPKCS8(normalized, 'RS256');
   cachedPrivateKey = key;
   cachedPrivateKeySource = normalized;
-  return key;
+  return cachedPrivateKey;
 }
 
 function buildLoyaltyObject(config: WalletConfig, params: LoyaltyPassParams) {
@@ -182,7 +182,7 @@ export async function createLoyaltySaveJwt(params: LoyaltyPassParams): Promise<L
     .setIssuedAt(nowSeconds)
     .setExpirationTime(expiresSeconds);
 
-  const jwt = await jwtBuilder.sign(privateKey);
+  const jwt = await jwtBuilder.sign(privateKey as any);
   const saveUrl = `https://pay.google.com/gp/v/save/${encodeURIComponent(jwt)}`;
 
   return {

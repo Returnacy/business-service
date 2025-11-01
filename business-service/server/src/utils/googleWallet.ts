@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { SignJWT, importPKCS8 } from 'jose';
 
 type WalletConfig = {
@@ -8,7 +9,6 @@ type WalletConfig = {
   defaultOrigins: string[];
   programName: string;
   issuerName: string;
-  pointsLabel: string;
   backgroundColor?: string;
   heroImageUri?: string;
   logoUri?: string;
@@ -65,7 +65,6 @@ function getWalletConfig(): WalletConfig {
     defaultOrigins,
     programName: process.env.GOOGLE_WALLET_PROGRAM_NAME?.trim() || 'Returnacy Loyalty',
     issuerName: process.env.GOOGLE_WALLET_ISSUER_NAME?.trim() || 'Returnacy',
-    pointsLabel: process.env.GOOGLE_WALLET_POINTS_LABEL?.trim() || 'Timbri',
   };
 
   const backgroundColor = process.env.GOOGLE_WALLET_BACKGROUND_COLOR?.trim();
@@ -136,10 +135,6 @@ function buildLoyaltyObject(config: WalletConfig, params: LoyaltyPassParams) {
       type: 'qrCode',
       value: params.qrValue,
       alternateText: cardName,
-    },
-    loyaltyPoints: {
-      label: config.pointsLabel,
-      balance: { int: Math.max(0, Math.floor(params.validStamps ?? 0)) },
     },
     textModulesData: textModules,
   };

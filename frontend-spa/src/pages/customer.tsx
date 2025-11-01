@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { Button } from "../components/ui/button";
 import { LoyaltyCard } from "../components/loyalty-card";
@@ -6,17 +6,20 @@ import { QRCode } from "../components/qr-code";
 import { Gift, CheckCircle, AlertCircle, Mail, Loader2, WalletCards } from "lucide-react";
 import { Link } from "wouter";
 import { apiRequest } from "../lib/queryClient";
-import { createGoogleWalletPass, getClientProfile, getPrizeProgression } from "../lib/legacy-api-adapter";
+import { createGoogleWalletPass, getClientProfile, getGoogleWalletStatus, getPrizeProgression } from "../lib/legacy-api-adapter";
 import type { ClientType } from "../types/client";
 import { useToast } from "../hooks/use-toast";
 import loyaltyLogo from "@assets/che_pizza_fidelity_logo_horizontal.png";
 import { useAuth } from "../hooks/use-auth";
 import { CouponType } from "../types/coupon";
 import { http } from "../lib/http";
+import { getBusinessId } from "../lib/servicesHttp";
 
 export default function CustomerPage() {
   const { toast } = useToast();
   const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const businessId = getBusinessId();
 
   // Unified client profile query (backend now returns aggregated ClientType)
   const clientQuery = useQuery<ClientType | null>({
@@ -40,6 +43,15 @@ export default function CustomerPage() {
     enabled: client != null,
     staleTime: 60_000,
   });
+
+  const walletStatusQuery = useQuery({
+    queryKey: ['walletStatus', businessId],
+    queryFn: async () => getGoogleWalletStatus({ businessId }),
+    enabled: !!user && !!businessId,
+    staleTime: 5 * 60_000,
+  });
+
+  const walletLinked = walletStatusQuery.data?.linked ?? false;
 
   // Derive values expected by existing UI (mock / fallback if absent)
   const userData = client ? (() => {
@@ -87,6 +99,9 @@ export default function CustomerPage() {
   >({
     mutationFn: async ({ qrCode }: { qrCode: string }) => {
       return await createGoogleWalletPass({ qrCode });
+    },
+    onSuccess: (pass) => {
+      queryClient.setQueryData(['walletStatus', businessId], { linked: true, objectId: pass.objectId ?? null });
     },
   });
 
@@ -289,33 +304,42 @@ export default function CustomerPage() {
               <QRCode value={userData?.id || ""} size={200} />
             </div>
           </CardContent>
-          <CardContent className="pt-0">
-            <div className="flex flex-col items-center gap-2">
-              <Button
-                onClick={handleSaveToGoogleWallet}
-                disabled={googleWalletMutation.isPending || !userData?.id}
-                variant="outline"
-                className="bg-white"
-              >
-                {googleWalletMutation.isPending ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Generazione in corso...
-                  </>
-                ) : (
-                  <>
-                    <WalletCards className="h-4 w-4 mr-2" />
-                    Salva su Google Wallet
-                  </>
+          {!walletLinked && (
+            <CardContent className="pt-0">
+              <div className="flex flex-col items-center gap-2">
+                <Button
+                  onClick={handleSaveToGoogleWallet}
+                  disabled={googleWalletMutation.isPending || walletStatusQuery.isLoading || !userData?.id}
+                  variant="outline"
+                  className="bg-white"
+                >
+                  {googleWalletMutation.isPending ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Generazione in corso...
+                    </>
+                  ) : (
+                    <>
+                      <WalletCards className="h-4 w-4 mr-2" />
+                      Salva su Google Wallet
+                    </>
+                  )}
+                </Button>
+                {googleWalletMutation.data?.expiresAt && (
+                  <p className="text-xs text-gray-500 text-center">
+                    Link valido fino a {new Date(googleWalletMutation.data.expiresAt).toLocaleString()}
+                  </p>
                 )}
-              </Button>
-              {googleWalletMutation.data?.expiresAt && (
-                <p className="text-xs text-gray-500 text-center">
-                  Link valido fino a {new Date(googleWalletMutation.data.expiresAt).toLocaleString()}
-                </p>
-              )}
-            </div>
-          </CardContent>
+              </div>
+            </CardContent>
+          )}
+          {walletLinked && (
+            <CardContent className="pt-0">
+              <p className="text-sm text-gray-500 text-center">
+                Carta già collegata con Google Wallet.
+              </p>
+            </CardContent>
+          )}
         </Card>
 
         {/* Coupons (display-only) */}

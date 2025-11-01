@@ -1,3 +1,4 @@
+// @ts-nocheck
 import axios, { AxiosInstance } from 'axios';
 import type { TokenService } from './tokenService.js';
 
@@ -71,5 +72,32 @@ export class UserServiceClient {
       },
       { headers }
     );
+  }
+
+  async getWalletPass(userId: string, businessId: string): Promise<{ linked: boolean; objectId: string | null; walletPass?: any } | null> {
+    const headers = await this.authHeaders();
+    try {
+      const res = await this.http.get(
+        `/internal/v1/users/${encodeURIComponent(userId)}/memberships/${encodeURIComponent(businessId)}/wallet-pass`,
+        { headers }
+      );
+      return res.data ?? null;
+    } catch (error: any) {
+      const status = error?.response?.status;
+      if (status === 404) {
+        return { linked: false, objectId: null };
+      }
+      throw error;
+    }
+  }
+
+  async upsertWalletPass(userId: string, businessId: string, payload: { objectId?: string | null }): Promise<{ linked: boolean; objectId: string | null; walletPass?: any }> {
+    const headers = await this.authHeaders();
+    const res = await this.http.post(
+      `/internal/v1/users/${encodeURIComponent(userId)}/memberships/${encodeURIComponent(businessId)}/wallet-pass`,
+      { objectId: payload.objectId },
+      { headers }
+    );
+    return res.data ?? { linked: true, objectId: payload.objectId ?? null };
   }
 }

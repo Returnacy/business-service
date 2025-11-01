@@ -223,6 +223,27 @@ export async function createGoogleWalletPass(options: { businessId?: string; qrC
   }
 }
 
+export async function getGoogleWalletStatus(options: { businessId?: string } = {}): Promise<{ linked: boolean; objectId: string | null }> {
+  try {
+    const businessId = options.businessId || getBusinessId();
+    if (!businessId) {
+      throw new Error('businessId is required to query Google Wallet status');
+    }
+    const response = await businessHttp.get<any>(`/api/v1/wallet/google?businessId=${encodeURIComponent(businessId)}`);
+    const payload = (response?.data ?? response) as { linked?: boolean; objectId?: string | null };
+    return {
+      linked: !!payload?.linked,
+      objectId: typeof payload?.objectId === 'string' ? payload.objectId : null,
+    };
+  } catch (error) {
+    // Treat 404/403 as not linked for UI purposes
+    if ((error as any)?.status === 403 || (error as any)?.status === 404) {
+      return { linked: false, objectId: null };
+    }
+    throw normalizeError(error);
+  }
+}
+
 /**
  * Accept latest terms and privacy on behalf of the current authenticated user
  * Optional payload supports marketingSubscription flag (ignored if not provided)

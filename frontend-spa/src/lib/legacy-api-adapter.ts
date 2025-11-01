@@ -11,8 +11,9 @@
  * /user -> /me 
  * /users -> /users (create) or /users/:userId (get)
  * /logout -> /auth/logout
- * /forgot-password -> /auth/password-resets
- * /reset-password -> /auth/password-resets (continue flow)
+ * /forgot-password -> /api/v1/auth/forgot-password
+ * /verify-email -> /api/v1/auth/verify-email
+ * /reset-password -> legacy Keycloak action-link flow
  * /crm/customers -> /users + transform
  * /users/:id/stamps -> /users/:userId/stamps
  * /users/:id/coupons -> /campaigns or /coupon-redemptions
@@ -262,7 +263,20 @@ export async function acceptUserAgreement(options?: { acceptPrivacyPolicy?: bool
 
 export async function forgotPassword(data: ForgotPasswordData): Promise<{ message: string }> {
   try {
-    return await http.post('/auth/password-resets', data);
+    const payload = {
+      ...data,
+      email: typeof data.email === 'string' ? data.email.trim().toLowerCase() : data.email,
+    };
+    const response = await userHttp.post<{ ok?: boolean; message?: string }>('/api/v1/auth/forgot-password', payload);
+    if (response && typeof response === 'object') {
+      if (typeof (response as any).message === 'string' && (response as any).message.length > 0) {
+        return { message: (response as any).message };
+      }
+      if ((response as any).ok) {
+        return { message: 'ok' };
+      }
+    }
+    return { message: 'ok' };
   } catch (error) {
     throw normalizeError(error);
   }

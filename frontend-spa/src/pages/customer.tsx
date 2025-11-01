@@ -13,7 +13,7 @@ import loyaltyLogo from "@assets/che_pizza_fidelity_logo_horizontal.png";
 import { useAuth } from "../hooks/use-auth";
 import { CouponType } from "../types/coupon";
 import { http } from "../lib/http";
-import { getBusinessId } from "../lib/servicesHttp";
+import { getBusinessId, userHttp } from "../lib/servicesHttp";
 
 export default function CustomerPage() {
   const { toast } = useToast();
@@ -134,8 +134,7 @@ export default function CustomerPage() {
   // Resend verification email mutation
   const resendVerificationMutation = useMutation({
     mutationFn: async () => {
-      // http.get resolves with parsed JSON (or null for empty body). If it doesn't throw, consider it success.
-      return await http.get("/auth/email-verifications/resend");
+      return await userHttp.post("/api/v1/auth/verify-email", { redirectUri: window.location.origin });
     },
     onSuccess: () => {
       toast({

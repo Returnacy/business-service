@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../co
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../components/ui/form";
 import { useToast } from "../hooks/use-toast";
 import { z } from "zod";
-import { http } from "../lib/http";
+import { userHttp } from "../lib/servicesHttp";
 
 const forgotPasswordSchema = z.object({ email: z.string().email() });
 type ForgotPasswordData = z.infer<typeof forgotPasswordSchema>;
@@ -28,8 +28,11 @@ export default function ForgotPasswordPage() {
 
   const forgotPasswordMutation = useMutation({
     mutationFn: async (data: ForgotPasswordData) => {
-      // Backend auth route prefix: /auth/password-resets
-      return await http.post<{ message: string }>(`/auth/password-resets`, data);
+      const payload = {
+        email: data.email.trim().toLowerCase(),
+        redirectUri: `${window.location.origin}/auth/reset-password`,
+      };
+      return await userHttp.post<{ ok?: boolean; message?: string }>(`/api/v1/auth/forgot-password`, payload);
     },
     onSuccess: () => {
       setIsSubmitted(true);

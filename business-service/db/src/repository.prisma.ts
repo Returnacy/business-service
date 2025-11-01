@@ -3,8 +3,8 @@ import { prisma } from './prismaClient.js';
 export class RepositoryPrisma {
   // Ensure brand and business exist (minimal cascade)
   async ensureBusiness(businessId: string) {
-    const SEED_BUSINESS_ID = 'biz_seed_1';
-    const SEED_BRAND_ID = 'brand_seed_1';
+  const SEED_BUSINESS_ID = 'af941888-ec4c-458e-b905-21673241af3e';
+  const SEED_BRAND_ID = '385d4ebb-4c4b-46e9-8701-0d71bfd7ce47';
 
     const existing = await prisma.business.findUnique({ where: { id: businessId } });
     if (existing) {
@@ -17,7 +17,7 @@ export class RepositoryPrisma {
           create: {
             id: SEED_BRAND_ID,
             name: 'Seed Brand',
-            email: 'brand_seed_1@brand.local',
+            email: '385d4ebb-4c4b-46e9-8701-0d71bfd7ce47@brand.local',
             phone: '+10000000001',
             address: 'N/A',
           },
@@ -39,7 +39,7 @@ export class RepositoryPrisma {
         create: {
           id: SEED_BRAND_ID,
           name: 'Seed Brand',
-          email: 'brand_seed_1@brand.local',
+          email: '385d4ebb-4c4b-46e9-8701-0d71bfd7ce47@brand.local',
           phone: '+10000000001',
           address: 'N/A',
         },
@@ -49,7 +49,7 @@ export class RepositoryPrisma {
           id: SEED_BUSINESS_ID,
           brandId: seedBrand.id,
           name: 'Seed Business',
-          email: 'biz_seed_1@business.local',
+          email: 'af941888-ec4c-458e-b905-21673241af3e@business.local',
           phone: '+10000000002',
           address: 'N/A',
         },

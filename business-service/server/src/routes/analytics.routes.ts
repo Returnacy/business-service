@@ -6,7 +6,7 @@ export function registerAnalyticsRoutes(app: FastifyInstance) {
   // GET /api/v1/analytics - core metrics
   app.get('/api/v1/analytics', async (request: any, reply: any) => {
     try {
-      const businessId = (request.query?.businessId as string) || (request.headers['x-business-id'] as string) || process.env.DEFAULT_BUSINESS_ID || 'biz_seed_1';
+  const businessId = (request.query?.businessId as string) || (request.headers['x-business-id'] as string) || process.env.DEFAULT_BUSINESS_ID || 'af941888-ec4c-458e-b905-21673241af3e';
 
       // Basic metrics using business-service data we own (stamps/coupons)
       const now = new Date();
@@ -63,7 +63,7 @@ export function registerAnalyticsRoutes(app: FastifyInstance) {
     try {
       const q = request.query || {};
       const days = Math.min(90, Math.max(1, Number(q.days || 30)));
-      const businessId = (q.businessId as string) || (request.headers['x-business-id'] as string) || process.env.DEFAULT_BUSINESS_ID || 'biz_seed_1';
+  const businessId = (q.businessId as string) || (request.headers['x-business-id'] as string) || process.env.DEFAULT_BUSINESS_ID || 'af941888-ec4c-458e-b905-21673241af3e';
 
       // Align to UTC midnight and compute start date (inclusive)
       const now = new Date();

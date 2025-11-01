@@ -78,5 +78,5 @@ export const businessHttp = createHttp(BUSINESS_BASE);
 export const campaignHttp = createHttp(CAMPAIGN_BASE);
 
 export function getBusinessId(): string {
-  return ENV.VITE_BUSINESS_ID || 'biz_seed_1';
+  return ENV.VITE_BUSINESS_ID || 'af941888-ec4c-458e-b905-21673241af3e';
 }

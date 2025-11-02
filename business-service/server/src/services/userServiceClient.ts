@@ -49,7 +49,8 @@ export class UserServiceClient {
   const offsetParam = params.offset;
   const offset = Number.isFinite(offsetParam) ? Math.max(0, Math.trunc(offsetParam as number)) : (page - 1) * limit;
     const payload: Record<string, any> = {
-      targetingRules: params.search ? [{ database: 'USER', field: 'email', operator: 'CONTAINS', value: params.search }] : [],
+      // For free-text search we rely on the user-service 'search' param (OR across name/email/phone),
+      // so we intentionally do NOT include targetingRules here to avoid AND-restricting by email only.
       limit,
       page,
       businessId: params.businessId ?? null,

@@ -383,7 +383,7 @@ export async function listCustomers(params: ListCustomersParams = {}): Promise<C
     const businessId = getBusinessId();
     const response = await businessHttp.post<any>('/api/v1/users', { ...body, businessId });
     // business-service returns { message, data }
-    const rows = ((response as any)?.data ?? (response as any)?.data?.data ?? response) as any[];
+  const rows = ((response as any)?.data ?? (response as any)?.data?.data ?? response) as any[];
     // Normalize into ClientType[] so CRM can read coupons/stamps consistently
     const list: ClientType[] = (rows || []).map((r: any) => ({
       id: String(r.id),
@@ -399,13 +399,14 @@ export async function listCustomers(params: ListCustomersParams = {}): Promise<C
       } : null,
       userAgreement: { privacyPolicy: false, termsOfService: false, marketingPolicy: false },
       coupons: {
-        validCoupons: Math.max(0, Number(r.couponsCount ?? 0) || 0),
-        usedCoupons: Math.max(0, (Number(r.totalCoupons ?? 0) || 0) - (Number(r.couponsCount ?? 0) || 0)),
+        validCoupons: Math.max(0, Number(r.couponsCount ?? r.stats?.validCoupons ?? 0) || 0),
+        usedCoupons: Math.max(0, (Number(r.totalCoupons ?? r.stats?.validCoupons ?? 0) || 0) - (Number(r.couponsCount ?? r.stats?.validCoupons ?? 0) || 0)),
       },
       stamps: {
-        validStamps: Number(r.validStamps ?? 0) || 0,
-        usedStamps: 0,
-      },
+        validStamps: Number(r.validStamps ?? r.stats?.validStamps ?? 0) || 0,
+        usedStamps: Math.max(0, (Number(r.totalStamps ?? r.stats?.totalStamps ?? 0) || 0) - (Number(r.validStamps ?? r.stats?.validStamps ?? 0) || 0)),
+        totalStamps: Number(r.totalStamps ?? r.stats?.totalStamps ?? r.validStamps ?? r.stats?.validStamps ?? 0) || 0,
+      } as any,
       nextPrize: {
         name: r.nextPrizeName || 'Prossimo premio',
         stampsLastPrize: Number(r.stampsLastPrize ?? 0) || 0,

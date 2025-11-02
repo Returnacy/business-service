@@ -101,8 +101,14 @@ export function registerUsersRoutes(app: FastifyInstance) {
       }
 
       const data = await Promise.all(baseUsers.map(async (u: BasicUser) => {
-        const stats = await app.repository.getUserStatsForBusiness(u.id, businessId);
-        const prog = computeProgression(stats.validStamps || 0);
+  const stats = await app.repository.getUserStatsForBusiness(u.id, businessId);
+  const upstreamValidStamps = (u as any).stats?.validStamps;
+  const upstreamTotalStamps = (u as any).stats?.totalStamps;
+  const upstreamValidCoupons = (u as any).stats?.validCoupons;
+  const upstreamLastVisit = (u as any).stats?.lastVisit;
+  const validStamps = upstreamValidStamps ?? stats.validStamps ?? 0;
+  const totalStamps = upstreamTotalStamps ?? stats.totalStamps ?? validStamps;
+  const prog = computeProgression(validStamps || 0);
         return {
           id: u.id,
           email: u.email,
@@ -110,10 +116,11 @@ export function registerUsersRoutes(app: FastifyInstance) {
           name: (u as any).name,
           surname: (u as any).surname,
           birthday: u.birthday ?? null,
-          validStamps: stats.validStamps,
-          couponsCount: stats.couponsCount, // unredeemed & not expired
+          validStamps,
+          totalStamps,
+          couponsCount: upstreamValidCoupons ?? stats.couponsCount, // unredeemed & not expired
           totalCoupons: stats.totalCoupons, // total earned (redeemed + unredeemed)
-          lastVisit: stats.lastVisit ? new Date(stats.lastVisit).toISOString() : null,
+          lastVisit: upstreamLastVisit ?? (stats.lastVisit ? new Date(stats.lastVisit).toISOString() : null),
           stampsLastPrize: prog.stampsLastPrize,
           stampsNextPrize: prog.stampsNextPrize,
           nextPrizeName: prog.nextPrizeName,

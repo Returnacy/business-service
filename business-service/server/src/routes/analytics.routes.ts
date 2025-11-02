@@ -31,7 +31,7 @@ export function registerAnalyticsRoutes(app: FastifyInstance) {
         app.repository.countStampsInRange(businessId, startOfWeek, now),
         app.repository.countStampsInRange(businessId, startOfMonth, now),
         app.repository.countRedeemedCouponsInRange(businessId, startOfMonth, now),
-        app.repository.countNewUsersSince(businessId, startOfWeek),
+        userClient.countNewUsersSince(businessId, startOfWeek),
         app.repository.countTotalCouponsRedeemed(businessId),
         app.repository.countRedeemedCouponsInRange(businessId, startOfWeek, now),
         app.repository.calculateAverageUserFrequency(businessId, 30),

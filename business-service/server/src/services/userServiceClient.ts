@@ -131,4 +131,14 @@ export class UserServiceClient {
     const count = res.data?.count ?? (res as any)?.count;
     return Number.isFinite(count) ? Number(count) : 0;
   }
+
+  async countNewUsersSince(businessId: string, since: Date): Promise<number> {
+    const headers = await this.authHeaders();
+    const res = await this.http.get(`/internal/v1/users/count-new`, {
+      params: { businessId, since: since.toISOString() },
+      headers,
+    });
+    const count = res.data?.count ?? (res as any)?.count;
+    return Number.isFinite(count) ? Number(count) : 0;
+  }
 }

@@ -121,4 +121,14 @@ export class UserServiceClient {
     );
     return res.data ?? { linked: true, objectId: payload.objectId ?? null };
   }
+
+  async countUsersByBusiness(businessId: string): Promise<number> {
+    const headers = await this.authHeaders();
+    const res = await this.http.get(`/internal/v1/users/count`, {
+      params: { businessId },
+      headers,
+    });
+    const count = res.data?.count ?? (res as any)?.count;
+    return Number.isFinite(count) ? Number(count) : 0;
+  }
 }

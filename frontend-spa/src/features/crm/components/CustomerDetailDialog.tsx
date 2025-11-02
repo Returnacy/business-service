@@ -23,7 +23,8 @@ interface Props {
 export function CustomerDetailDialog({ customer, onClose, onAddStamps, onRedeemCoupon, onDelete, redeemState, deleteState }: Props) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const validStamps = customer?.stamps || 0;
+  // Use validStamps for progression; fallback to total stamps if not provided
+  const validStamps = (customer?.validStamps ?? customer?.stamps ?? 0);
   const progQuery = useQuery({
     queryKey: ['crm:prizeProgression', customer?.id, validStamps],
     queryFn: async () => getPrizeProgression(validStamps),

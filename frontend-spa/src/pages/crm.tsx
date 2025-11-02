@@ -31,7 +31,10 @@ interface UserType {
   email?: string;
   phone?: string;
   role: string;
+  // stamps holds TOTAL stamps (valid + used)
   stamps: number;
+  // validStamps is the current usable stamps (for next prize progression)
+  validStamps?: number;
   totalCoupons?: number;
   validCoupons?: number;
   lastSeen?: string;
@@ -154,11 +157,15 @@ export default function CRMPage() {
     const validCoupons = u.coupons?.validCoupons ?? 0;
     const usedCoupons = u.coupons?.usedCoupons ?? 0;
     const totalEarned = validCoupons + usedCoupons; // total coupons ever earned
+    // Stamps: prefer total from server if present; fallback to (valid + used)
+    const validStamps = u.stamps?.validStamps ?? 0;
+    const usedStamps = u.stamps?.usedStamps ?? Math.max(0, (u.stamps?.totalStamps ?? 0) - (u.stamps?.validStamps ?? 0));
+    const totalStamps = (u.stamps?.totalStamps ?? (validStamps + usedStamps));
     // Next prize info from server mapping (if present via adapter)
     const stampsLastPrize = u.nextPrize?.stampsLastPrize ?? 0;
-    const stampsNextPrize = u.nextPrize?.stampsNextPrize ?? Math.floor(((u.stamps?.validStamps ?? 0)) / 15) * 15 + 15;
+    const stampsNextPrize = u.nextPrize?.stampsNextPrize ?? Math.floor(((validStamps ?? 0)) / 15) * 15 + 15;
     const stampsNeeded = Math.max(1, stampsNextPrize - stampsLastPrize);
-    const currentProgress = Math.max(0, (u.stamps?.validStamps ?? 0) - stampsLastPrize);
+    const currentProgress = Math.max(0, (validStamps ?? 0) - stampsLastPrize);
     const stampsToNext = Math.max(0, stampsNeeded - (currentProgress % stampsNeeded));
     const nextPrizeName = (u.nextPrize?.name ?? 'Prossimo premio') || 'Prossimo premio';
     return {
@@ -167,7 +174,8 @@ export default function CRMPage() {
       email: u.email || undefined,
       phone: u.phone || undefined,
       role: u.role?.toLowerCase?.() || 'user',
-      stamps: (u.stamps?.validStamps ?? 0) + (u.stamps?.usedStamps ?? 0),
+      stamps: totalStamps,
+      validStamps,
       totalCoupons: totalEarned,
       validCoupons,
       lastSeen: u.lastVisit ? new Date(u.lastVisit as string | Date).toISOString() : undefined,

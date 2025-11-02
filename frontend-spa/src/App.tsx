@@ -45,30 +45,30 @@ function Router() {
       <ProtectedRoute 
         path="/feedback" 
         component={FeedbackPage} 
-        allowedRoles={["staff", "admin"]} 
+        allowedRoles={["staff", "manager", "brand_manager", "admin"]} 
       />
 
       <ProtectedRoute 
         path="/scan-qr" 
         component={ScanQRPage} 
-        allowedRoles={["staff", "admin"]}
+        allowedRoles={["staff", "manager", "brand_manager", "admin"]}
       />
 
       {/* Admin-only routes */}
       <ProtectedRoute 
         path="/dashboard" 
         component={DashboardPage} 
-        allowedRoles={["manager", "admin"]}
+        allowedRoles={["manager", "brand_manager", "admin"]}
       />
       <ProtectedRoute 
         path="/crm" 
         component={CRMPage} 
-        allowedRoles={["manager", "admin"]}
+        allowedRoles={["manager", "brand_manager", "admin"]}
       />
       <ProtectedRoute 
         path="/marketing-automations" 
         component={MarketingAutomationsPage} 
-        allowedRoles={["manager", "admin"]}
+        allowedRoles={["manager", "brand_manager", "admin"]}
       />
       
       {/* Dev-only routes */}

@@ -400,7 +400,7 @@ export async function listCustomers(params: ListCustomersParams = {}): Promise<C
       userAgreement: { privacyPolicy: false, termsOfService: false, marketingPolicy: false },
       coupons: {
         validCoupons: Math.max(0, Number(r.couponsCount ?? r.stats?.validCoupons ?? 0) || 0),
-        usedCoupons: Math.max(0, (Number(r.totalCoupons ?? r.stats?.validCoupons ?? 0) || 0) - (Number(r.couponsCount ?? r.stats?.validCoupons ?? 0) || 0)),
+        usedCoupons: Math.max(0, (Number(r.totalCoupons ?? 0) || 0) - (Number(r.couponsCount ?? r.stats?.validCoupons ?? 0) || 0)),
       },
       stamps: {
         validStamps: Number(r.validStamps ?? r.stats?.validStamps ?? 0) || 0,

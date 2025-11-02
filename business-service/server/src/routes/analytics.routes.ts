@@ -15,18 +15,8 @@ export function registerAnalyticsRoutes(app: FastifyInstance) {
       const startOfMonth = new Date(now);
       startOfMonth.setDate(now.getDate() - 30);
 
-      // Pull total users from user-service to align with CRM list
-      const userServiceUrl = process.env.USER_SERVICE_URL || 'http://user-server:3000';
-      const tokenUrl = process.env.KEYCLOAK_TOKEN_URL;
-      const clientId = process.env.KEYCLOAK_CLIENT_ID;
-      const clientSecret = process.env.KEYCLOAK_CLIENT_SECRET;
-      if (!tokenUrl || !clientId || !clientSecret) {
-        throw new Error('Missing KEYCLOAK_TOKEN_URL, KEYCLOAK_CLIENT_ID or KEYCLOAK_CLIENT_SECRET for business-service');
-      }
-      const tokenService = new TokenService({ tokenUrl, clientId, clientSecret });
-      const userClient = new UserServiceClient({ baseUrl: userServiceUrl, tokenService });
-      const allUsers = await userClient.queryUsers({ businessId, limit: 10000 });
-      const totalCustomers = allUsers.length;
+      // Total customers: count distinct users that have interacted with this business (stamps or coupons)
+      const totalCustomers = await app.repository.distinctUsersForBusiness(businessId);
 
       const [weekTotalStamps, monthTotalStamps, monthTotalCouponsRedeemed, weekNewUsers, totalCouponsRedeemed, weekTotalCouponsRedeemed, averageUserFrequency, returnacyRate] = await Promise.all([
         app.repository.countStampsInRange(businessId, startOfWeek, now),

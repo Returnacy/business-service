@@ -36,11 +36,18 @@ export class UserServiceClient {
   async queryUsers(params: QueryUsersParams): Promise<BasicUser[]> {
     // If the real user-service is running, call its internal query endpoint with service auth.
     const headers = await this.authHeaders();
-    const res = await this.http.post('/internal/v1/users/query', {
+    const limit = Math.max(1, Math.min(Math.trunc(params.limit ?? 50), 200));
+    const page = Math.max(1, Math.trunc(params.page ?? 1));
+    const offset = (page - 1) * limit;
+    const payload: Record<string, any> = {
       targetingRules: params.search ? [{ database: 'USER', field: 'email', operator: 'CONTAINS', value: params.search }] : [],
-      limit: params.limit ?? 50,
+      limit,
+      page,
       businessId: params.businessId ?? null,
-    }, { headers });
+    };
+    if (offset > 0) payload.offset = offset;
+    if (params.minStamp !== undefined) payload.minStamp = params.minStamp;
+    const res = await this.http.post('/internal/v1/users/query', payload, { headers });
     const users: any[] = res.data?.users ?? [];
     return users.map(u => ({
       id: String(u.id),

@@ -53,6 +53,7 @@ export class UserServiceClient {
       limit,
       page,
       businessId: params.businessId ?? null,
+      search: params.search || undefined,
     };
     if (offset > 0) payload.offset = offset;
   if (params.minStamp !== undefined) payload.minStamp = params.minStamp;

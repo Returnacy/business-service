@@ -320,7 +320,8 @@ export class RepositoryPrisma {
   // Extend later if a local mirror exists. Here we only provide stamp/coupon counts enrichment API.
   async getUserStatsForBusiness(userId: string, businessId: string) {
     const now = new Date();
-    const [validStamps, unredeemedActiveCount, totalCoupons, lastStamp, lastCoupon] = await Promise.all([
+    const [totalStamps, validStamps, unredeemedActiveCount, totalCoupons, lastStamp, lastCoupon] = await Promise.all([
+      prisma.stamp.count({ where: { userId, businessId } }),
       prisma.stamp.count({ where: { userId, businessId, isRedeemed: false } }),
       prisma.coupon.count({
         where: {
@@ -340,6 +341,6 @@ export class RepositoryPrisma {
     const lastVisitDate = [lastStamp?.createdAt ?? null, lastCoupon?.createdAt ?? null]
       .filter((d): d is Date => d instanceof Date)
       .sort((a, b) => b.getTime() - a.getTime())[0] || null;
-    return { validStamps, couponsCount: unredeemedActiveCount, totalCoupons, lastVisit: lastVisitDate };
+    return { totalStamps, validStamps, couponsCount: unredeemedActiveCount, totalCoupons, lastVisit: lastVisitDate };
   }
 }

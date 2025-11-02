@@ -38,13 +38,26 @@ export function registerUsersRoutes(app: FastifyInstance) {
       const tokenService = new TokenService({ tokenUrl, clientId, clientSecret });
       const userClient = new UserServiceClient({ baseUrl: userServiceUrl, tokenService });
 
+      const queryFilters: NonNullable<Parameters<typeof userClient.queryUsers>[0]>['filters'] = {};
+      if (input.filter?.minStamp !== undefined) {
+        queryFilters.minStamps = input.filter.minStamp;
+      }
+      if (input.filter?.hasCoupon) {
+        queryFilters.couponsOnly = true;
+      }
+      if (input.filter?.hasVisited) {
+        queryFilters.lastVisitDays = input.filter.hasVisited;
+      }
+
       const queried = await userClient.queryUsers({
         page: input.page,
         limit: input.limit,
         search: input.search,
         businessId,
-        // map filters that the internal endpoint can support in the future
         minStamp: input.filter?.minStamp,
+        sortBy: input.sortBy,
+        sortOrder: input.sortOrder,
+        filters: Object.keys(queryFilters).length ? queryFilters : undefined,
       });
       const baseUsers = queried;
 
@@ -106,54 +119,7 @@ export function registerUsersRoutes(app: FastifyInstance) {
           nextPrizeName: prog.nextPrizeName,
         };
       }));
-
-      // Apply filters (minStamp, hasCoupon, hasVisited in last N days)
-      const filtered = data.filter((row) => {
-        let ok = true;
-        if (input.filter?.minStamp && input.filter.minStamp > 0) {
-          ok = ok && ((row.validStamps ?? 0) >= input.filter.minStamp);
-        }
-        if (input.filter?.hasCoupon) {
-          ok = ok && ((row.couponsCount ?? 0) > 0);
-        }
-        if (input.filter?.hasVisited && input.filter.hasVisited > 0) {
-          const cutoff = Date.now() - (input.filter.hasVisited * 24 * 60 * 60 * 1000);
-          const lastTs = row.lastVisit ? Date.parse(row.lastVisit) : 0;
-          ok = ok && (lastTs >= cutoff);
-        }
-        return ok;
-      });
-
-      // Apply sorting based on input.sortBy and input.sortOrder
-      const order = input.sortOrder === 'desc' ? -1 : 1;
-      const sorted = [...filtered].sort((a, b) => {
-        switch (input.sortBy) {
-          case 'stamp': {
-            const av = a.validStamps ?? 0; const bv = b.validStamps ?? 0; return (av - bv) * order;
-          }
-          case 'coupon': {
-            const av = a.couponsCount ?? 0; const bv = b.couponsCount ?? 0; return (av - bv) * order;
-          }
-          case 'lastVisit': {
-            const av = a.lastVisit ? Date.parse(a.lastVisit) : 0;
-            const bv = b.lastVisit ? Date.parse(b.lastVisit) : 0;
-            return (av - bv) * order;
-          }
-          case 'name':
-          default: {
-            const an = `${a.name ?? ''} ${a.surname ?? ''}`.trim().toLowerCase();
-            const bn = `${b.name ?? ''} ${b.surname ?? ''}`.trim().toLowerCase();
-            return an.localeCompare(bn) * order;
-          }
-        }
-      });
-
-      // Apply pagination on sorted list (1-based page)
-      const start = Math.max(0, (input.page - 1) * input.limit);
-      const end = start + input.limit;
-      const paged = sorted.slice(start, end);
-
-      return reply.code(200).send({ message: 'Users retrieved successfully', data: paged });
+      return reply.code(200).send({ message: 'Users retrieved successfully', data });
     } catch (e: any) {
       app.log.error(e);
       return reply.code(400).send({ message: e?.message ?? 'Invalid payload' });

@@ -5,9 +5,17 @@ import type { TokenService } from './tokenService.js';
 export type QueryUsersParams = {
   page?: number;
   limit?: number;
+  offset?: number;
   search?: string;
   businessId?: string;
   minStamp?: number;
+  sortBy?: 'name' | 'stamp' | 'coupon' | 'lastVisit';
+  sortOrder?: 'asc' | 'desc';
+  filters?: {
+    minStamps?: number;
+    couponsOnly?: boolean;
+    lastVisitDays?: number | null;
+  };
 };
 
 export type BasicUser = {
@@ -37,8 +45,9 @@ export class UserServiceClient {
     // If the real user-service is running, call its internal query endpoint with service auth.
     const headers = await this.authHeaders();
     const limit = Math.max(1, Math.min(Math.trunc(params.limit ?? 50), 200));
-    const page = Math.max(1, Math.trunc(params.page ?? 1));
-    const offset = (page - 1) * limit;
+  const page = Math.max(1, Math.trunc(params.page ?? 1));
+  const offsetParam = params.offset;
+  const offset = Number.isFinite(offsetParam) ? Math.max(0, Math.trunc(offsetParam as number)) : (page - 1) * limit;
     const payload: Record<string, any> = {
       targetingRules: params.search ? [{ database: 'USER', field: 'email', operator: 'CONTAINS', value: params.search }] : [],
       limit,
@@ -46,7 +55,10 @@ export class UserServiceClient {
       businessId: params.businessId ?? null,
     };
     if (offset > 0) payload.offset = offset;
-    if (params.minStamp !== undefined) payload.minStamp = params.minStamp;
+  if (params.minStamp !== undefined) payload.minStamp = params.minStamp;
+  if (params.sortBy) payload.sortBy = params.sortBy;
+  if (params.sortOrder) payload.sortOrder = params.sortOrder;
+  if (params.filters) payload.filters = params.filters;
     const res = await this.http.post('/internal/v1/users/query', payload, { headers });
     const users: any[] = res.data?.users ?? [];
     return users.map(u => ({

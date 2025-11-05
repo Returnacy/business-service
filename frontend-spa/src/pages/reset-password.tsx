@@ -47,9 +47,12 @@ export default function ResetPasswordPage() {
 
   const resetPasswordMutation = useMutation({
     mutationFn: async (data: ResetPasswordData) => {
-      const { confirmPassword, ...payload } = data; // backend expects { token, password }
-      // Auth backend route: /auth/password-resets/confirm
-      return await http.post<{ message: string }>(`/auth/password-resets/confirm`, payload);
+      const { confirmPassword, ...payload } = data; // payload has { token, password }
+      // Backend expects { token, newPassword }
+      const apiPayload = { token: payload.token, newPassword: payload.password };
+      // Auth backend route (v1): /api/v1/auth/reset-password
+      // Align with user-service routes registered at prefix /api/v1/auth
+      return await http.post<{ message: string }>(`/api/v1/auth/reset-password`, apiPayload);
     },
     onSuccess: () => {
       setIsSuccess(true);

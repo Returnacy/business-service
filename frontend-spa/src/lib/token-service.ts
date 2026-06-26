@@ -84,6 +84,8 @@ const AUTH_PUBLIC_PATHS = [
   '/auth/reset-password',
   '/password-resets',
   '/verify-email',
+  '/privacy',
+  '/terms',
 ];
 
 function redirectToAuthIfNeeded() {

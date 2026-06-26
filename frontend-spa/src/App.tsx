@@ -20,6 +20,7 @@ import KPIDashboard from "./pages/kpi-dashboard";
 import NotFound from "./pages/not-found";
 import TermsConsentDialog from "./components/TermsConsentDialog";
 import PrivacyPage from "./pages/privacy";
+import TermsPage from "./pages/terms";
 
 function Router() {
   return (
@@ -29,6 +30,7 @@ function Router() {
       <Route path="/auth/forgot-password" component={ForgotPasswordPage} />
       <Route path="/auth/reset-password" component={ResetPasswordPage} />
   <Route path="/privacy" component={PrivacyPage} />
+  <Route path="/terms" component={TermsPage} />
     <Route path="/password-resets" component={ResetPasswordPage} />
   <Route path="/verify-email" component={VerifyEmailPage} />
   {/* Alias for email verification links sent by backend */}

@@ -6,8 +6,8 @@ export default function TermsPage() {
       <p className="mb-4">
         I presenti Termini e Condizioni (di seguito i “Termini”) disciplinano l'iscrizione e la
         partecipazione al programma fedeltà (di seguito il “Programma”) offerto da
-        <strong> Che Pizza! Di Stella Salvatore</strong>, con sede legale in via Ponterotto 162M, 35010
-        Limena (PD), C.F. STLSVT02M20G224Y, P. IVA 05639230282, indirizzo email
+        <strong> Che Pizza! Di Stella Salvatore</strong>, con sede legale in via Firenze 25, 35010
+        Villafranca Padovana (PD), C.F. STLSVT02M20G224Y, P. IVA 05639230282, indirizzo email
         {" "}<a className="underline text-blue-600" href="mailto:salvatore@chepizzadasalva.it">salvatore@chepizzadasalva.it</a>
         {" "}(di seguito il “Locale” o il “Titolare del Programma”), e fruibile attraverso la piattaforma
         denominata “Returnacy” e/o i canali web del Locale (di seguito i “Canali web”).
